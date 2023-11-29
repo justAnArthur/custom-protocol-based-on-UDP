@@ -1,15 +1,29 @@
-import struct
 import unittest
 from enum import Enum
 
 
 class Type(Enum):
     REQ = int('011', 2)
+    REQ_M = int('010', 2)
+    APR = int('100', 2)
+    NACK = int('101', 2)
+    DATA = int('000', 2)
+    KEEP_A = int('110', 2)
 
 
 class Mask(Enum):
     #            checksum, hash, window, filename
     REQ = [0b111, 0x1FFFFF, (1 << 256) - 1, 0xFF, '_']
+    #            checksum, window
+    REQ_M = [0b111, 0x1FFFFF, 0xFF]
+    #            checksum, seq_number
+    APR = [0b111, 0x1FFFFF, (1 << 32) - 1]
+    #            checksum, seq_number
+    NACK = [0b111, 0x1FFFFF, (1 << 32) - 1]
+    #            checksum, seq_number, data
+    DATA = [0b111, 0x1FFFFF, (1 << 32) - 1, '_']
+    #
+    KEEP_A = [0b111, 0x1FFFFF]
 
 
 def unpack_message(message_bytes):
