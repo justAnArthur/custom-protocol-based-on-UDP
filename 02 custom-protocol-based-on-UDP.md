@@ -95,38 +95,54 @@ retransmission, all the while concurrently continuing to receive subsequent pack
 
 ## The user journey
 
+This sequence diagram shows the user's journey of sending a message from Alice to Bob.
+Where boxes are like computer poll with ports and participants are the ports.
+
+
 ```mermaid
 sequenceDiagram
-    actor Alice
-    actor John
-
-    loop every `5` seconds
-        Alice ->> John: REQ  
+    box Alice
+        participant M1 as 77
+        participant R11 as 65001
+        participant R12 as 65002
+        participant R13 as 65003
+    end
+    box Bob
+        participant M2 as 88
+        participant R21 as 64001
     end
 
-    John ->> Alice: APR
+    rect rgb(8, 159, 143)
+        note right of M1: Alice opens session by typing port.
 
-    loop repeat while for all file bytes
-        loop repeat `window` times
-            Alice ->> John: DATA
-            John -->> Alice: NACK (0xR) (If segment was errored)
-            Alice -->> John: DATA (0xR)
+        loop every second
+            R11 ->> M2: KEEP-A
+            M2 ->> R11: KEEP-A
         end
 
-        John -->> Alice: APR (window + 1) (Next bulk of packets)
-    end
+        rect rgb(0, 137, 138)
+            note right of M1: Alice enters the message.
+            R12 ->> M2: REQ_M
+            R21 ->> R12: APR
 
-    loop every `5` seconds
-        John ->> Alice: CSUM (with calculated hash)
-    end
+            loop while not send all bytes
+                loop window size
+                    R12 ->> R21: Data
 
-    Alice ->> John: APR
+                    opt dropped packet or checksum error
+                        R21 ->> R12: NACK
+                    end
+                end
+                R21 ->> R12: APR
+            end
 
-    opt
-        loop every `5` seconds (if setted)
-            Alice ->> John: KEEP-A
-            John ->> Alice: KEEP-A
         end
+
+        loop every second
+            R13 ->> M2: KEEP-A
+            M2 ->> R13: KEEP-A
+        end
+
     end
 ```
 

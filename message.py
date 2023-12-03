@@ -15,7 +15,7 @@ class Mask(Enum):
     #            checksum, hash, window, filename
     REQ = [0b111, 0x1FFFFF, (1 << 256) - 1, 0xFF, '_']
     #            checksum, window
-    REQ_M = [0b111, 0x1FFFFF, 0xFF]
+    REQ_M = [0b111, 0x1FFFFF, 0xFF, '_']
     #            checksum, seq_number
     APR = [0b111, 0x1FFFFF, (1 << 32) - 1]
     #            checksum, seq_number
@@ -91,6 +91,8 @@ def open_message(message):
         raise ValueError('Invalid checksum')
     return fields
 
+def corrupt_message(message):
+     return message[:1] + bytes([ord('a')]) + message[2:]
 
 class Message(unittest.TestCase):
     def test__compute_checksum(self):

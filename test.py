@@ -1,22 +1,16 @@
-# # The string to be split
-# message = "Some information needed to be divided into chunks of certain bytes"
-#
-# # The size of each chunk in bytes
-# chunk_size = 10
-#
-# # Convert the string to bytes
-# byte_msg = message.encode('utf-8')
-#
-# # Split the byte string into chunks
-# byte_chunks = [byte_msg[i: i + chunk_size] for i in range(0, len(byte_msg), chunk_size)]
-#
-# # Decode each chunk back into a string
-# chunks = [bytes_chunk.decode('utf-8', 'ignore') for bytes_chunk in byte_chunks]
-#
-# message_map = {i * 10: chunk for i, chunk in enumerate(chunks)}
-#
-# for key, value in message_map.items():
-#     print(f'Key: {key}, Value: {value}', len(value.encode('utf-8')))
+payload_size = 1
+window_size = 1
+index = 0
 
-for i in range(5, 6):
-    print(i)
+message_bytes = 'Удобный поиск поможет вам получить доступ более чем к 125 000 словам англо-русского словаря, который продолжает пополняться. К подавляющему большинству слов вы можете посмотреть варианты перевода, примеры использования, словосочетания, транскрипцию, а также прослушать американское и британское произношение слова'.encode('utf-8')
+message_chunks = {i: message_bytes[i: i + payload_size] for i in range(0, len(message_bytes), payload_size)}
+
+if len(message_bytes) % payload_size == 0:
+    message_chunks[len(message_chunks)] = b''
+
+print(max(message_chunks.keys()))
+
+# for seq_number, data in {key: message_chunks[key] for key in
+#                          [index + i * payload_size for i in range(window_size)] if
+#                          key in message_chunks}.items():
+#     print(seq_number, data)
