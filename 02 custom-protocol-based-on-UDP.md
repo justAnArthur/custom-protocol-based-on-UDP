@@ -21,15 +21,19 @@ The header structure itself will not be absolute and will be modified with respe
 forwarded. Because of the logic of this protocol, it will not affect in any area if a packet arrives with a different
 type.
 
-| REQ (0x011) | Checksum | Hash     | Window size | Filename |
-|-------------|----------|----------|-------------|----------|
-| 3 bits      | 21 bits  | 256 bits | 8 bits      | ...      |
+| REQ (0x011) | Checksum | Window size | Payload size | Filename |
+|-------------|----------|-------------|--------------|----------|
+| 3 bits      | 18 bits  | 8 bits      | 11 bits      | ...      |
+
+- Sender sends when it wants to send a file.
 
 ---
 
-| REQ_M (0x010) | Checksum | Window size |
-|---------------|----------|-------------|
-| 3 bits        | 21 bits  | 8 bits      |
+| REQ_M (0x010) | Checksum | Window size | Payload size | 
+|---------------|----------|-------------|--------------|
+| 3 bits        | 18 bits  | 8 bits      | 11 bits      |
+
+- Sender sends when it wants to send message.
 
 ---
 
@@ -37,11 +41,16 @@ type.
 |--------------|----------|------------|------|
 | 3 bits       | 21 bits  | 32 bits    | ...  |
 
+- Chunk of message (file)
+
 ---
 
 | APR (0x100) | Checksum | SEQ Number | 
 |-------------|----------|------------|
-| 3 bits      | 21 bits  | 32 bits    | 
+| 3 bits      | 21 bits  | 32 bits    |
+
+- Acknowledge the received window.
+- And as sender understands which window to send next.
 
 ---
 
@@ -49,17 +58,16 @@ type.
 |--------------|----------|------------|
 | 3 bits       | 21 bits  | 32 bits    | 
 
----
-
-| CSUM (0x111) | Checksum | Hash     | 
-|--------------|----------|----------|
-| 3 bits       | 21 bits  | 256 bits | 
+- Negative acknowledge the received packet.
 
 ---
 
 | KEEP-A (0x110) |  
 |----------------|
 | 3 bits         | 
+
+- If one endpoint sends it to another - another must answer with the same packet to confirm that another endpoint is
+  alive and ready for sending the packet.
 
 ---
 
@@ -69,17 +77,25 @@ type.
       _1472 - (21+32+3) = 1465_.
       _4,294,967,296 * 1465 ~ **6.25 GB is maximum**_.
 - **Checksum**
-    - **21 bits** checksum field used to avoid any hash error in sending large files.
+    - Checksum field used to avoid any bit errors.
     - _Will be used "Internet
       Checksum":
       [Calculating the Checksum,
       with a taste](https://www.securitynik.com/2015/08/calculating-udp-checksum-with-taste-of_3.html)_.
-- **Hash**
-    - This header field will be used to check if a document is gotten properly right. It Would be used by REQ and CSUM.
-    - Also, it might be used as **unique identification** for certain files.
-        - _If sending the file was interrupted - the receiver might request the remain segments (start from last
-          received one)_.
-    - _Will be used the BLAKE3 algorithm [cryptographic hash function](https://github.com/BLAKE3-team/BLAKE3)_.
+    - ```python
+      def compute_checksum(bits_length, *data):
+      checksum = sum(data)
+
+      while checksum.bit_length() > bits_length:
+        # Split the checksum into two halves
+        mask = (1 << (checksum.bit_length() // 2)) - 1
+        low_bits = checksum & mask
+        high_bits = checksum >> (checksum.bit_length() // 2)
+
+        checksum = low_bits + high_bits
+
+      return checksum
+      ```
 
 ## ARQ Method
 
@@ -98,14 +114,12 @@ retransmission, all the while concurrently continuing to receive subsequent pack
 This sequence diagram shows the user's journey of sending a message from Alice to Bob.
 Where boxes are like computer poll with ports and participants are the ports.
 
-
 ```mermaid
 sequenceDiagram
     box Alice
         participant M1 as 77
         participant R11 as 65001
         participant R12 as 65002
-        participant R13 as 65003
     end
     box Bob
         participant M2 as 88
@@ -139,50 +153,12 @@ sequenceDiagram
         end
 
         loop every second
-            R13 ->> M2: KEEP-A
-            M2 ->> R13: KEEP-A
+            R11 ->> M2: KEEP-A
+            M2 ->> R11: KEEP-A
         end
 
     end
 ```
-
-%% ## State machine
-
-```mermaid
-stateDiagram-v2
-    state PORT_3141 {
-        LISTEN --> REQ: Type destination and file/text
-        LISTEN --> APROVING: Got `REQ`
-        APROVING --> LISTEN: "Ignored"
-        APROVING --> HANDLING: Send `APR`
-        note right of APROVING
-            On `seq` field use from which segment to start.
-            To options add the size of segment.
-        end note
-    }
-
-    state PORT_RANDOM {
-        HANDLING --> [*]: Timer run out
-        HANDLING --> HANDLING: Got a segment
-        HANDLING --> REQ_MISSING: Send `ARP` with `seq` of missing segment if ⏲️
-        REQ_MISSING --> REQ_MISSING: ⏲️
-        HANDLING --> CHECKING: Got a segment `length` < const
-        CHECKING --> CHECKING: Send `CSUM` ⏲️
-        CHECKING --> [*]: Got `APR`
-    }
-
-    state PORT_RANDOM' {
-        REQ --> REQ: ⏲️
-        note left of REQ
-            Sending `REQ` message with file name.
-        end note
-        REQ --> SENDING: Got `APR`
-        SENDING --> WAIT_ON_CHECK: Send last segment
-        WAIT_ON_CHECK --> [*]
-    }
- ```
-
-%%
 
 ## Code
 

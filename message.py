@@ -13,9 +13,9 @@ class Type(Enum):
 
 class Mask(Enum):
     #            checksum, hash, window, filename
-    REQ = [0b111, 0x1FFFFF, (1 << 256) - 1, 0xFF, '_']
+    REQ = [0b111, 0x3FFFF, 0xFF, 0x7FF, '_']
     #            checksum, window
-    REQ_M = [0b111, 0x1FFFFF, 0xFF, '_']
+    REQ_M = [0b111, 0x3FFFF, 0xFF, 0x7FF]
     #            checksum, seq_number
     APR = [0b111, 0x1FFFFF, (1 << 32) - 1]
     #            checksum, seq_number
@@ -91,8 +91,10 @@ def open_message(message):
         raise ValueError('Invalid checksum')
     return fields
 
+
 def corrupt_message(message):
-     return message[:1] + bytes([ord('a')]) + message[2:]
+    return message[:1] + bytes([ord('a')]) + message[2:]
+
 
 class Message(unittest.TestCase):
     def test__compute_checksum(self):
@@ -125,11 +127,23 @@ class Message(unittest.TestCase):
         _fields = unpack_message(message)
         self.assertEqual(173013, _fields[1])
 
-    def test__open_message(self):
+    def test__open_message_01(self):
         fields = [
             Type.REQ.value,  # without checksum
             0x3398d424e5d1a1f2657dc06680dee743aced01dd177b69c32a09c70f1f362bb9,
             1, int('<3 U )'.encode().hex(), 16)
+        ]
+        message = create_message(*fields)
+        _fields = open_message(message)
+        self.assertEqual(fields, _fields)
+
+        message = message[:1] + bytes([ord('a')]) + message[2:]
+        with self.assertRaises(ValueError):
+            _fields = open_message(message)
+
+    def test__open_message_02(self):
+        fields = [
+            Type.REQ_M.value, 1, 1, int('<3 U )'.encode().hex(), 16)
         ]
         message = create_message(*fields)
         _fields = open_message(message)
