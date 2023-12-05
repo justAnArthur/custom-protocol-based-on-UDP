@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--port', type=int, default=3141, help='Select the port to listen on')
 parser.add_argument('-a', '--ip', type=str, default='localhost', help='Select the ip to listen on')
 parser.add_argument('-d', '--debug', type=bool, default=False, help='True/False to enable/disable debug mode')
+parser.add_argument('-b', '--broken', type=bool, default=False,
+                    help='True/False to enable/disable randomly corrupting and dropping messages')
 args = parser.parse_args()
 
 ip = args.ip
@@ -44,32 +46,30 @@ def receive_message(fields, ip, port):
     def send_negative(seq_number):
         nonlocal seq_number_negatives
         if seq_number in seq_number_negatives:
-            print('send negative')
             sock_message.sendto(create_message(*[Type.NACK.value, seq_number]), (ip, int(port)))
             time.sleep(1.0)
             send_negative(seq_number)
 
     def send_ack(seq_number):
-        print('sending ack', seq_number)
-        if random.randint(0, 6) < 2:
-            print('changed data')
+        message = create_message(*[Type.APR.value, seq_number])
 
-            message = create_message(*[Type.APR.value, seq_number])
-
+        if args.broken and random.randint(0, 10) < 2:
+            if args.debug:
+                print('broking message', seq_number)
             message = corrupt_message(message)
-
-            if random.randint(0, 6) > 2:
-                sock_message.sendto(message, (ip, int(port)))
-
+        elif args.broken and random.randint(0, 10) < 2:
+            if args.debug:
+                print('dropping message', seq_number)
             return
-        sock_message.sendto(create_message(*[Type.APR.value, seq_number]), (ip, int(port)))
+
+        sock_message.sendto(message, (ip, int(port)))
 
     received = False
 
     timeout_index = 0
 
     while True:
-        if timeout_index > 3:
+        if timeout_index > 2:
             break
 
         if received is not False and seq_number_negatives == []:
@@ -82,18 +82,15 @@ def receive_message(fields, ip, port):
             fields = open_message(data)
 
             timeout_index = 0
-            print('received', fields[1])
         except TimeoutError:
-            print('connection timed out')
             timeout_index += 1
             continue
         except ValueError:
-            print('invalid message')
             seq_number_negatives.append(seq_number)
             threading.Timer(0.1, send_negative, args=(seq_number,)).start()
             continue
         except BaseException as e:
-            print('receiving error', 'dada', e)
+            print('receiving error', e)
             break
 
         if fields[0] == Type.DATA.value:
@@ -112,7 +109,6 @@ def receive_message(fields, ip, port):
             if fields[1] == seq_number and fields[1] in seq_number_negatives:
                 seq_number_negatives.remove(fields[1])
 
-            print('negative', seq_number, fields[1], seq_number_negatives)
             if fields[1] not in seq_number_negatives:
                 seq_number = fields[1] + _payload_size
                 index += 1
@@ -133,8 +129,10 @@ def receive_message(fields, ip, port):
 
             print(f'file {fileName} received')
         else:
-            print(
-                ''.join([message_chunk_bytes[key].decode('utf-8', 'ignore') for key in sorted(message_chunk_bytes.keys())]))
+            print(ip, ':', port, '>',
+                  ''.join(
+                      [message_chunk_bytes[key].decode('utf-8', 'ignore') for key in
+                       sorted(message_chunk_bytes.keys())]))
 
 
 def listen(ip, port):
@@ -147,7 +145,8 @@ def listen(ip, port):
             print('receiving error', e)
             continue
 
-        # print(f"received message: {fields[0]} from {addr}")
+        if args.debug:
+            print('received', fields)
 
         match fields[0]:
             case Type.REQ.value:
@@ -182,7 +181,9 @@ def send_message(ip, port, message_bytes, file=None):
 
         try:
             data, addr = sock_message.recvfrom(1472)
+
             fields = open_message(data)
+
             ip, port = addr
             index = fields[1]
         except BaseException as e:
@@ -200,75 +201,46 @@ def send_message(ip, port, message_bytes, file=None):
         raise ConnectionError
 
     def send_chunk(seq_number):
-        print('sending chunk', seq_number)
         sock_message.sendto(
             create_message(*[Type.DATA.value, seq_number, int.from_bytes(message_chunks[seq_number], 'big')]),
             (ip, int(port)))
 
-    listen_on_negative = threading.Event()
-
-    def handle_negative(listen):
-        while not listen.is_set():
-            try:
-                data, addr = sock_message.recvfrom(1472)
-
-                fields = open_message(data)
-
-                # print('received negative', data)
-            except BaseException as e:
-                print('receiving error', e)
-                continue
-
-            if fields[0] == Type.NACK.value:
-                send_chunk(fields[1])
-
     sending = True
 
     while sending:
-        # listen_on_negative.clear()
-        # thread = threading.Thread(target=handle_negative, args=(listen_on_negative,))
-        # thread.start()
-
         for seq_number, data in {key: message_chunks[key] for key in
                                  [index + i * payload_size for i in range(window_size)] if
                                  key in message_chunks}.items():
-            if random.randint(0, 6) < 2:
-                print('sending chunk changed data', seq_number)
 
-                message = create_message(
-                    *[Type.DATA.value, seq_number, int.from_bytes(message_chunks[seq_number], 'big')])
-
-                message = corrupt_message(message)
-
-                if random.randint(0, 6) > 2:
-                    sock_message.sendto(message, (ip, int(port)))
-
+            if args.broken and random.randint(0, 10) < 2:
+                if args.debug:
+                    print('broking message', seq_number)
+                sock_message.sendto(corrupt_message(
+                    create_message(*[Type.DATA.value, seq_number, int.from_bytes(message_chunks[seq_number], 'big')])),
+                    (ip, int(port)))
+                continue
+            elif args.broken and random.randint(0, 10) < 2:
+                if args.debug:
+                    print('dropping message', seq_number)
                 continue
 
             send_chunk(seq_number)
 
-        # listen_on_negative.set()
-        #
-
         while True:
-            # print('listen on ack')
             try:
                 data, addr = sock_message.recvfrom(1472)
 
                 fields = open_message(data)
 
-                print('received', fields[0], fields[1])
+                if args.debug:
+                    print('received', fields)
 
                 if fields[0] == Type.NACK.value:
                     send_chunk(fields[1])
                 elif fields[0] == Type.APR.value:
 
-                    # print('if send successfully', fields[1], is_message_with_remainder, payload_size, message_chunks,
-                    #       message_chunks.keys())
-
                     if max(message_chunks.keys()) + payload_size == fields[1]:
                         sending = False
-                        # print('sent successfully')
                         sock_message.close()
                     elif fields[1] in message_chunks.keys():
                         index = fields[1]
@@ -277,10 +249,9 @@ def send_message(ip, port, message_bytes, file=None):
             except TimeoutError:
                 break
             except ValueError:
-                print('invalid message')
                 break
             except BaseException as e:
-                print('receiving error', 'hello', e)
+                print('receiving error', e)
                 sending = False
                 break
 
@@ -299,7 +270,7 @@ def session(ip, port):
         try:
             data, addr = sock_keep_alive.recvfrom(1472)
         except BaseException as e:
-            print('connection ', e)
+            print('exception on keep-alive connection ', e)
             alive_connection = False
         else:
             alive_connection = True
@@ -343,7 +314,7 @@ def session(ip, port):
 def user_input():
     while True:
         try:
-            _socket = input('enter port number:\n')
+            _socket = input('enter ip and port number:\n')
 
             if _socket.startswith('>payload_size '):
                 try:
