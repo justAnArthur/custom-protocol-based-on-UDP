@@ -19,6 +19,8 @@ port = args.port
 window_size = 1
 payload_size = 1
 
+storing_directory = '.\\'
+
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((ip, int(port)))
 
@@ -123,7 +125,7 @@ def receive_message(fields, ip, port):
 
     if received:
         if is_file:
-            with open(fileName, 'wb') as file:
+            with open(storing_directory + fileName, 'wb') as file:
                 for key in sorted(message_chunk_bytes.keys()):
                     file.write(message_chunk_bytes[key])
 
@@ -316,20 +318,31 @@ def user_input():
         try:
             _socket = input('enter ip and port number:\n')
 
-            if _socket.startswith('>payload_size '):
-                try:
-                    global payload_size
-                    payload_size = int(_socket.split(' ')[1])
-                except ValueError:
-                    print('invalid input')
-                continue
-            elif _socket.startswith('>window_size '):
-                try:
-                    global window_size
-                    window_size = int(_socket.split(' ')[1])
-                except ValueError:
-                    print('invalid input')
-                continue
+            if _socket.startswith('>'):
+                if _socket.startswith('>payload_size '):
+                    try:
+                        global payload_size
+                        payload_size = int(_socket.split(' ')[1])
+                    except ValueError:
+                        print('invalid input')
+                    continue
+                elif _socket.startswith('>window_size '):
+                    try:
+                        global window_size
+                        window_size = int(_socket.split(' ')[1])
+                    except ValueError:
+                        print('invalid input')
+                    continue
+                elif _socket.startswith('>storing_directory '):
+                    try:
+                        global storing_directory
+                        storing_directory = _socket.split(' ')[1]
+                    except ValueError:
+                        print('invalid input')
+                    continue
+                else:
+                    print('invalid command')
+                    continue
             else:
                 _ip, _port = _socket.split(' ')
                 ip = _ip
