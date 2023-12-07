@@ -12,6 +12,8 @@ parser.add_argument('-a', '--ip', type=str, default='localhost', help='Select th
 parser.add_argument('-d', '--debug', type=bool, default=False, help='True/False to enable/disable debug mode')
 parser.add_argument('-b', '--broken', type=bool, default=False,
                     help='True/False to enable/disable randomly corrupting and dropping messages')
+parser.add_argument('-e', '--encryption', type=bool, default=False,
+                    help='True/False to enable/disable "encryption"')
 args = parser.parse_args()
 
 ip = args.ip
@@ -131,10 +133,17 @@ def receive_message(fields, ip, port):
 
             print(f'file {fileName} received')
         else:
-            print(ip, ':', port, '>',
-                  ''.join(
-                      [message_chunk_bytes[key].decode('utf-8', 'ignore') for key in
-                       sorted(message_chunk_bytes.keys())]))
+            _message = ''.join(
+                [message_chunk_bytes[key].decode('utf-8', 'ignore') for key in
+                 sorted(message_chunk_bytes.keys())])
+
+            if args.encryption and len(_message) % 2 != 0:
+                _message = _message[:-1]
+
+            print(ip,
+                  ':', port,
+                  '|', (len(_message) + 1) // 3,
+                  '>', _message)
 
 
 def listen(ip, port):
@@ -302,6 +311,9 @@ def session(ip, port):
                 except FileNotFoundError:
                     print('file not found')
                     continue
+
+            if args.encryption:
+                message = ' '.join([message[i:i + 2][::-1] for i in range(0, len(message), 2)])
 
             send_message(ip, port, message.encode('utf-8'))
         except BaseException as e:
