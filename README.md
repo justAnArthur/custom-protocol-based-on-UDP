@@ -1,8 +1,3 @@
-- [x]  📅 2023-12-04 ✅ 2023-12-13
-- [x] 📅 2023-11-19 navbar ✅ 2023-12-13
-
----
-
 ## Exercise
 
 A task was given to create a custom protocol and an application that works with this protocol. The protocol itself must
@@ -13,11 +8,7 @@ So after a time, blood and sweat, a protocol emerged:
 **Sync 'n' Send Spectacle (SNSS)**
 
 - As a protocol for exchanging messages and files.
-<<<<<<< HEAD
-- Customisable, according to network needs and its maximum capabilities.
-=======
 - Customizable, according to network needs and its maximum capabilities.
->>>>>>> 3dc9896 (- file)
     - By setting `paload_size` and `window_size`.
 - Based on UDP.
 - Might be useful as a kind of torrent protocol.
