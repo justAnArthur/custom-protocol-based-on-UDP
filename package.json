@@ -1,0 +1,21 @@
+{
+  "name": "snss-protocol",
+  "version": "1.0.0",
+  "description": "Sync 'n' Send Spectacle (SNSS) - Custom protocol based on UDP for reliable message and file transfer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-client.js"
+  },
+  "keywords": [
+    "udp",
+    "protocol",
+    "snss",
+    "reliable-transfer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
