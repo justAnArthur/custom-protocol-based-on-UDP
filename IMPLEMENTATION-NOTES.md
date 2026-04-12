@@ -11,9 +11,9 @@ This document describes the JavaScript/Node.js implementation of the SNSS (Sync 
 The JavaScript implementation follows a modular architecture:
 
 ```
-├── message.js          - Protocol message handling (5.7 KB)
-├── server.js           - Main server implementation (21.7 KB)
-├── test-client.js      - Test suite and examples (7.2 KB)
+├── message.ts          - Protocol message handling (5.7 KB)
+├── server.ts           - Main server implementation (21.7 KB)
+├── message.test.ts      - Test suite and examples (7.2 KB)
 ├── package.json        - Node.js configuration
 ├── .gitignore          - Build artifacts exclusion
 ├── README-JS.md        - Complete documentation (7.5 KB)
@@ -56,7 +56,7 @@ The JavaScript implementation produces **identical binary messages** to the Pyth
 
 ## Technical Implementation Details
 
-### 1. Message Module (message.js)
+### 1. Message Module (message.ts)
 
 **Key Functions:**
 - `packMessage(type, ...fields)` - Converts fields to binary format
@@ -82,7 +82,7 @@ const fields = openMessage(aprMsg);
 // Result: [4, 1024] - type APR, sequence 1024
 ```
 
-### 2. Server Module (server.js)
+### 2. Server Module (server.ts)
 
 **Core Components:**
 
@@ -116,7 +116,7 @@ sock.bind(port, ip);
 - Random packet dropping
 - Tests protocol resilience
 
-### 3. Test Suite (test-client.js)
+### 3. Test Suite (message.test.ts)
 
 **Test Coverage:**
 1. Message type definitions ✓
@@ -196,9 +196,9 @@ sock.bind(port, ip);
 ## Usage Statistics
 
 ### Lines of Code
-- message.js: ~230 lines
-- server.js: ~650 lines
-- test-client.js: ~230 lines
+- message.ts: ~230 lines
+- server.ts: ~650 lines
+- message.test.ts: ~230 lines
 - **Total: ~1,110 lines**
 
 ### Documentation
@@ -257,11 +257,11 @@ sock.bind(port, ip);
 
 ### Adding New Message Types
 
-1. Add to `Type` enum in message.js
+1. Add to `Type` enum in message.ts
 2. Add to `Mask` definition with field structure
 3. Update `getTypeName()` if needed
-4. Add handling in server.js `listen()` function
-5. Add test case in test-client.js
+4. Add handling in server.ts `listen()` function
+5. Add test case in test-client.ts
 
 ### Modifying Protocol
 
@@ -303,17 +303,17 @@ sock.bind(port, ip);
 
 ### Development
 ```bash
-node server.js -p 3141 -d true
+bun run server.ts -p 3141 -d true
 ```
 
 ### Testing
 ```bash
-node server.js -p 3141 -b true -d true
+bun run server.ts -p 3141 -b true -d true
 ```
 
 ### Production (if secured)
 ```bash
-node server.js -p 3141 -a 0.0.0.0
+bun run server.ts -p 3141 -a 0.0.0.0
 # + Add authentication layer
 # + Add TLS wrapper
 # + Add monitoring

@@ -4,7 +4,7 @@ Get up and running with the JavaScript SNSS protocol in 2 minutes!
 
 ## Prerequisites
 
-- Node.js 14.0 or higher
+- Bun >= 1.0 or higher
 - No installation needed - zero dependencies!
 
 ## Quick Start (3 Steps)
@@ -14,7 +14,7 @@ Get up and running with the JavaScript SNSS protocol in 2 minutes!
 Verify everything works:
 
 ```bash
-node test-client.js
+bun test
 ```
 
 Expected output:
@@ -29,7 +29,7 @@ Expected output:
 Open **Terminal 1**:
 
 ```bash
-node server.js -p 3141
+bun run server.ts -p 3141
 ```
 
 You should see:
@@ -42,7 +42,7 @@ SNSS Server listening on localhost:3141
 Open **Terminal 2**:
 
 ```bash
-node server.js -p 3142
+bun run server.ts -p 3142
 ```
 
 Then type:
@@ -99,14 +99,14 @@ Before connecting, set larger transfer parameters:
 
 See what's happening under the hood:
 ```bash
-node server.js -p 3141 -d true
+bun run server.ts -p 3141 -d true
 ```
 
 ### Test Error Handling
 
 Simulate network problems:
 ```bash
-node server.js -p 3141 -b true -d true
+bun run server.ts -p 3141 -b true -d true
 ```
 
 ## Common Commands
@@ -132,9 +132,9 @@ node server.js -p 3141 -b true -d true
 
 ```
 .
-├── message.js              # Protocol implementation
+├── message.ts              # Protocol implementation
 ├── server.js               # Main server
-├── test-client.js          # Test suite
+├── message.test.ts          # Test suite
 ├── package.json            # Node.js config
 ├── README-JS.md            # Full documentation
 ├── USAGE-EXAMPLES.md       # Detailed examples
@@ -164,12 +164,12 @@ node server.js -p 3141 -b true -d true
 
 1. **Start with debug mode** to understand protocol flow:
    ```bash
-   node server.js -d true
+   bun run server.ts -d true
    ```
 
 2. **Test with broken mode** to see error recovery:
    ```bash
-   node server.js -b true -d true
+   bun run server.ts -b true -d true
    ```
 
 3. **Adjust window/payload** for your network:

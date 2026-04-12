@@ -9,7 +9,7 @@ This document provides practical examples for using the JavaScript implementatio
 First, verify everything works by running the test suite:
 
 ```bash
-node test-client.js
+bun test
 ```
 
 You should see:
@@ -23,12 +23,12 @@ You should see:
 
 **Terminal 1 (Server A):**
 ```bash
-node server.js -p 3141
+bun run server.ts -p 3141
 ```
 
 **Terminal 2 (Server B):**
 ```bash
-node server.js -p 3142
+bun run server.ts -p 3142
 ```
 
 In Terminal 2, establish a session with Server A:
@@ -83,7 +83,7 @@ The receiving server will save the file in its storage directory (current direct
 **Set custom window size and payload size:**
 
 ```bash
-node server.js -p 3141
+bun run server.ts -p 3141
 ```
 
 Then before establishing a session:
@@ -112,7 +112,7 @@ Storing directory set to /tmp/snss-files/
 Enable debug mode to see detailed protocol operations:
 
 ```bash
-node server.js -p 3141 -d true
+bun run server.ts -p 3141 -d true
 ```
 
 You'll see output like:
@@ -128,12 +128,12 @@ Simulate network errors with broken mode:
 
 **Terminal 1:**
 ```bash
-node server.js -p 3141 -b true -d true
+bun run server.ts -p 3141 -b true -d true
 ```
 
 **Terminal 2:**
 ```bash
-node server.js -p 3142 -b true -d true
+bun run server.ts -p 3142 -b true -d true
 ```
 
 Messages will be randomly corrupted or dropped, and you'll see the protocol's error recovery:
@@ -148,7 +148,7 @@ received [ 5, 0 ]  # NACK requesting retransmission
 Enable simple character-pair encryption:
 
 ```bash
-node server.js -p 3141 -e true
+bun run server.ts -p 3141 -e true
 ```
 
 Messages will be encrypted by reversing character pairs:
@@ -160,10 +160,10 @@ Messages will be encrypted by reversing character pairs:
 **Setup:**
 ```bash
 # Terminal 1
-node server.js -p 5000 -d true
+bun run server.ts -p 5000 -d true
 
 # Terminal 2  
-node server.js -p 5001 -d true
+bun run server.ts -p 5001 -d true
 ```
 
 **In Terminal 1:**
@@ -210,7 +210,7 @@ python main.py -p 3141
 
 **Terminal 2 (JavaScript):**
 ```bash
-node server.js -p 3142
+bun run server.ts -p 3142
 ```
 
 Then establish connection from either side - they should communicate seamlessly!
@@ -319,7 +319,7 @@ file not found
 
 3. **Network Quality**: Use broken mode to test in poor network conditions
    ```bash
-   node server.js -b true
+   bun run server.ts -b true
    ```
 
 ## Session Management
@@ -351,12 +351,12 @@ Hi there!
 
 1. **Always use debug mode during development**
    ```bash
-   node server.js -d true
+   bun run server.ts -d true
    ```
 
 2. **Test with broken mode before production**
    ```bash
-   node server.js -b true
+   bun run server.ts -b true
    ```
 
 3. **Configure window and payload sizes based on network conditions**

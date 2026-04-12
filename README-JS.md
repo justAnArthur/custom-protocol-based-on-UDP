@@ -22,7 +22,7 @@ No installation required - just Node.js!
 
 ```bash
 # Make scripts executable (optional)
-chmod +x server.js test-client.js
+chmod +x server.ts
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ chmod +x server.js test-client.js
 ### Starting the Server
 
 ```bash
-node server.js [options]
+bun run server.ts [options]
 
 Options:
   -p, --port <number>        Port to listen on (default: 3141)
@@ -45,24 +45,24 @@ Options:
 
 **Start a basic server:**
 ```bash
-node server.js -p 3141
+bun run server.ts -p 3141
 ```
 
 **Start server with debug mode:**
 ```bash
-node server.js -p 3141 -d true
+bun run server.ts -p 3141 -d true
 ```
 
 **Start server with simulated network errors:**
 ```bash
-node server.js -p 3142 -b true -d true
+bun run server.ts -p 3142 -b true -d true
 ```
 
 ### Testing the Protocol
 
 Run the test suite:
 ```bash
-node test-client.js
+bun test
 ```
 
 This will run a comprehensive test suite that validates:
@@ -76,12 +76,12 @@ This will run a comprehensive test suite that validates:
 
 **Terminal 1:**
 ```bash
-node server.js -p 3141
+bun run server.ts -p 3141
 ```
 
 **Terminal 2:**
 ```bash
-node server.js -p 3142
+bun run server.ts -p 3142
 ```
 
 Then in Terminal 2, enter:
@@ -155,25 +155,25 @@ The application has two states:
 
 ## File Structure
 
-- **`message.js`** - Core protocol message handling
+- **`message.ts`** - Core protocol message handling
   - Message packing/unpacking
   - Checksum calculation and validation
   - Type definitions and masks
 
-- **`server.js`** - Main server implementation
+- **`server.ts`** - Main server implementation
   - UDP socket management
   - Message/file sending and receiving
   - Session management with keep-alive
   - User input handling
 
-- **`test-client.js`** - Test suite
+- **`message.test.ts`** - Test suite
   - Unit tests for all message types
   - Protocol functionality demonstration
   - Usage examples
 
 ## API Reference
 
-### message.js
+### message.ts
 
 ```javascript
 const { Type, createMessage, openMessage, computeChecksum } = require('./message');
@@ -261,7 +261,7 @@ The test suite validates:
 
 Run tests with:
 ```bash
-node test-client.js
+bun test
 ```
 
 ## Differences from Python Version
