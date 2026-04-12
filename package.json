@@ -1,0 +1,21 @@
+{
+  "name": "snss-protocol",
+  "version": "1.0.0",
+  "description": "Sync 'n' Send Spectacle (SNSS) - Custom protocol based on UDP for reliable message and file transfer",
+  "main": "server.ts",
+  "scripts": {
+    "start": "bun run server.ts",
+    "test": "bun test"
+  },
+  "keywords": [
+    "udp",
+    "protocol",
+    "snss",
+    "reliable-transfer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
