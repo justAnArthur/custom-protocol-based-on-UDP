@@ -1,4 +1,93 @@
-## Exercise
+<a href="https://github.com/justAnArthur/custom-protocol-based-on-UDP"><img src=".github/banner.svg" alt="Reliable transfer over UDP: SNSS, a custom protocol for messages and files: windowed sends, NACK resend of broken chunks, keep-alive every second." width="100%"></a>
+
+# Sync 'n' Send Spectacle (SNSS)
+
+A custom protocol on top of UDP for sending text messages and files between two nodes, with a terminal client in Python that speaks it. Built for Computer and Communication Networks (PKS) at FIIT STU in autumn 2023.
+
+> Finished coursework (assignment 2, due 4 December 2023).
+
+## What it does
+
+- Runs every node as sender and receiver at once: one thread listens on a UDP port (3141 by default), another reads commands and messages from the terminal
+- Splits a message or file into chunks of a configurable payload size and sends them in windows of a configurable size
+- Checks every packet with a folded-sum checksum; the receiver answers a corrupted or missing chunk with NACK and each full window with APR
+- Keeps an open session alive with KEEP-A packets every second from a separate socket, and ends it when the peer stops answering
+- Simulates a bad network on demand: `--broken` corrupts or drops packets at random
+
+## How it works
+
+Every packet starts with a 3-bit type. Sequence numbers are byte offsets into the message, so the receiver can order chunks and spot gaps; transfers end with the first chunk shorter than the payload size.
+
+| Type | Bits | Fields after the type |
+|---|---|---|
+| DATA | `000` | checksum 21 b, seq 32 b, data |
+| REQ_M | `010` | checksum 18 b, window size 8 b, payload size 11 b |
+| REQ | `011` | as REQ_M, plus the file name |
+| APR | `100` | checksum 21 b, seq 32 b |
+| NACK | `101` | checksum 21 b, seq 32 b |
+| KEEP-A | `110` | checksum 21 b |
+
+```mermaid
+sequenceDiagram
+  participant A as Sender
+  participant B as Receiver (listens on 3141)
+  loop every 1 s while the session is open
+    A->>B: KEEP-A
+    B-->>A: KEEP-A
+  end
+  A->>B: REQ_M (window size, payload size) or REQ + file name
+  B-->>A: APR 0, from a new socket
+  loop until a chunk shorter than the payload size arrives
+    A->>B: DATA (seq = byte offset), window size chunks
+    opt chunk dropped or checksum fails
+      B-->>A: NACK seq
+      A->>B: DATA seq again
+    end
+    B-->>A: APR next seq
+  end
+```
+
+## Run
+
+Python 3.10 or newer, no dependencies.
+
+```bash
+python main.py -p 3141      # node A
+python main.py -p 3142      # node B, in a second terminal
+```
+
+At the `enter ip and port number` prompt:
+
+| Input | Effect |
+|---|---|
+| `localhost 3141` | open a session with that node (IP and port separated by a space) |
+| `>window_size 4` | chunks per window (default 1) |
+| `>payload_size 512` | bytes per chunk (default 1) |
+| `>storing_directory <path>` | where received files are saved |
+
+Inside a session, type a message and press Enter, send a file from the current directory with `\<file name>`, or leave with `>exit`.
+
+Flags: `-a/--ip` (default `localhost`), `-p/--port` (default 3141), `-d/--debug`, `-b/--broken`, `-e/--encryption` (swaps each pair of characters, a toy cipher).
+
+## Stack
+
+Python standard library only: `socket`, `threading`, `argparse`, `random`, `time`.
+
+## Documentation
+
+- [02 custom-protocol-based-on-UDP.pdf](02%20custom-protocol-based-on-UDP.pdf): the final report (English, 7 pages); the `.docx` and `.md` next to it are other versions of it
+- [exercise.pdf](exercise.pdf): the assignment (Slovak)
+- [wireshark_send_describe.jpg](wireshark_send_describe.jpg): a message transfer captured in Wireshark
+
+## License
+
+[CC BY-NC-ND 4.0](LICENSE): share it with credit, but no changes and no commercial use. Don't hand it in as your own coursework.
+
+---
+
+## Original README
+
+### Exercise
 
 A task was given to create a custom protocol and an application that works with this protocol. The protocol itself must
 be designed to work without interruption in an interfering environment.
@@ -15,13 +104,13 @@ So after a time, blood and sweat, a protocol emerged:
     - Because of the way it works, it is possible to receive several files (parts of file) in parallel.
     - And set from which part to start receiving.
 
-## Sync 'n' Send Spectacle (SNSS)
+### Sync 'n' Send Spectacle (SNSS)
 
-### ARQ Method
+#### ARQ Method
 
 No off-the-shelf ARQ method was used for this. It was created on the basis of the best qualities of others.
 
-#### Data (message) sending
+##### Data (message) sending
 
 - Sender sends an `N` packets and waits for an `ACK`.
     - If `ACK` is not received, it resends the same N packets.
@@ -30,11 +119,11 @@ No off-the-shelf ARQ method was used for this. It was created on the basis of th
 - The Receiver receives `N` packets and sends an `ACK`.
     - If the packet is corrupted, it sends a `NACK`.
 
-#### Requesting / Keep-alive
+##### Requesting / Keep-alive
 
 Used a simple request-response principe.
 
-### Header Structure
+#### Header Structure
 
 The header structure itself will not be absolute and will be modified with respect to the type of segment being
 forwarded.
@@ -120,9 +209,9 @@ forwarded.
 - **Payload size**
     - How many bytes of data are sent in one packet.
 
-### Protocol journey
+#### Protocol journey
 
-#### Keep-alive
+##### Keep-alive
 
 Simple exchanging of `KEEP-A` packets through timeout is used to keep the connection alive in active (open) session.
 
@@ -144,7 +233,7 @@ sequenceDiagram
     end
 ```
 
-#### "(Two) Three-way handshake"
+##### "(Two) Three-way handshake"
 
 When connection is established, the sender sends a `REQ` to request sending the message or file.
 
@@ -163,7 +252,7 @@ sequenceDiagram
     R21 -->> R11: APR
 ```
 
-#### Sending a message
+##### Sending a message
 
 1. Alice enters the `ip:port` of Bob.
     - _Session is opened_.
@@ -223,14 +312,14 @@ sequenceDiagram
 
 ![wireshark_send_describe.jpg](wireshark_send_describe.jpg)
 
-### Error handling
+#### Error handling
 
 A rather large checksum field is used for this purpose. To control the smallest bit errors.
 
 Depending on the given connection, the sender or receiver resends or requests the message,
 if a packet was dropped or received with invalid `checksum`.
 
-## Application
+### Application
 
 Application was written in `Python 3.10.11` and uses the following libraries:
 
@@ -245,7 +334,7 @@ Application was written in `Python 3.10.11` and uses the following libraries:
         - etc...
 - `time`
 
-### Usage
+#### Usage
 
 ```cmd
 use:
@@ -276,7 +365,7 @@ To quit `in session` state enter `>exit` command.
 >- The file must be in the same directory as a python file.
 >- To send a file enter `\[filename]` command `in session` state.
 
-### Code
+#### Code
 
 The application runs in tho main threads:
 - `listen`, that listen on keep-alive packets and incoming messages.
@@ -352,7 +441,7 @@ The application runs in tho main threads:
 
 ---
 
-## linked W
+### linked W
 
 - [Learning by practicing: Calculating the TCP Checksum, with a taste of scapy + Wireshark (security.com)](https://www.securitynik.com/2015/08/calculating-udp-checksum-with-taste-of_3.html)
 - [Python, how to read bytes from a file and save it? — Stack Overflow](https://stackoverflow.com/questions/6787233/python-how-to-read-bytes-from-file-and-save-it)
